@@ -1,21 +1,23 @@
 from datetime import datetime
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 
-from app.models.db_models import Contact
+from app.models.db_models import Contact, User
 from app.models.contact_model import GetAllResponseModel, PostRequestModel, DBModel, PutRequestModel
 
 
-async def create_contact_crud(body: PostRequestModel, db: Session) -> None:
+async def create_contact_crud(body: PostRequestModel, user: User, db: Session) -> None:
     try:
         contact = Contact(
             first_name=body.first_name,
             last_name=body.last_name,
             email=body.email,
             phone_number=body.phone_number,
-            birthday=body.birthday
+            birthday=body.birthday,
+            user_id=user.id
         )
         db.add(contact)
         db.commit()
@@ -25,8 +27,8 @@ async def create_contact_crud(body: PostRequestModel, db: Session) -> None:
                             detail=f"Problem with create contact. {e}")
 
 
-async def get_contacts_crud(skip: int, limit: int, db: Session) -> GetAllResponseModel:
-    contacts = db.query(Contact).offset(skip).limit(limit).all()
+async def get_contacts_crud(skip: int, limit: int, user: User, db: Session) -> GetAllResponseModel:
+    contacts = db.query(Contact).filter(Contact.user_id == user.id).offset(skip).limit(limit).all()
     return GetAllResponseModel(
         contacts=[DBModel.from_orm(c) for c in contacts],
         skip=skip,
@@ -34,8 +36,8 @@ async def get_contacts_crud(skip: int, limit: int, db: Session) -> GetAllRespons
 )
 
 
-async def get_contact_crud(contact_id: int, db: Session) -> DBModel:
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+async def get_contact_crud(contact_id: int, user: User, db: Session) -> DBModel:
+    contact = db.query(Contact).filter(and_(Contact.id == contact_id, Contact.user_id == user.id)).first()
     if contact is None:
         raise HTTPException(status_code=404,
                             detail="Contact not found")
@@ -43,8 +45,8 @@ async def get_contact_crud(contact_id: int, db: Session) -> DBModel:
     return DBModel.from_orm(contact)
 
 
-async def update_contact_crud(body: PutRequestModel, contact_id: int, db: Session) -> None:
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+async def update_contact_crud(body: PutRequestModel, contact_id: int, user: User, db: Session) -> None:
+    contact = db.query(Contact).filter(and_(Contact.id == contact_id, Contact.user_id == user.id)).first()
     if contact:
         contact.first_name = body.first_name
         contact.last_name = body.last_name
@@ -58,8 +60,8 @@ async def update_contact_crud(body: PutRequestModel, contact_id: int, db: Sessio
                             detail="Contact not found")
 
 
-async def remove_contact_crud(contact_id: int, db: Session) -> None:
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+async def remove_contact_crud(contact_id: int, user: User, db: Session) -> None:
+    contact = db.query(Contact).filter(and_(Contact.id == contact_id, Contact.user_id == user.id)).first()
     if contact:
         db.delete(contact)
         db.commit()
@@ -68,7 +70,7 @@ async def remove_contact_crud(contact_id: int, db: Session) -> None:
                             detail="Contact not found")
 
 
-async def found_contact(db: Session, first_name: str = None, last_name: str = None, email: str = None):
+async def found_contact(db: Session, first_name: str = None, last_name: str = None, email: str = None, user: User = None):
     """Додаткові функції до майбутнього використання в API"""
     filters = []
     if first_name:
