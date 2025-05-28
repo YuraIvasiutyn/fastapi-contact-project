@@ -22,3 +22,7 @@ MAIL_SERVER=
 
 REDIS_HOST=
 REDIS_PORT=
+
+
+python3 -m unittest discover app/tests/
+PYTHONPATH=. pytest app/tests/

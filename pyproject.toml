@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "fastapi-contact-project"
+version = "0.1.0"
+description = "Контактна форма на FastAPI"
+authors = ["yivasiutyn yuraivasyutin221@gmail.com"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+sphinx = "^8.2.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
